@@ -15,6 +15,7 @@ void main_app::render(double currentTime)
 	glClearBufferfv(GL_COLOR, NULL, back_color);
 
 	glUseProgram(program_);
+	glPointSize(5.0f);
 	glDrawArrays(GL_PATCHES, 0, 3);
 }
 
@@ -47,10 +48,10 @@ void main_app::compile_shaders()
 		"void main(void)																\n"
 		"{																				\n"
 		"	if (gl_InvocationID == 0) {													\n"
-		"		gl_TessLevelInner[0] = 3.0;												\n"
-		"		gl_TessLevelOuter[0] = 3.0;												\n"
-		"		gl_TessLevelOuter[1] = 3.0;												\n"
-		"		gl_TessLevelOuter[2] = 3.0;												\n"
+		"		gl_TessLevelInner[0] = 4.0;												\n"
+		"		gl_TessLevelOuter[0] = 2.0;												\n"
+		"		gl_TessLevelOuter[1] = 2.0;												\n"
+		"		gl_TessLevelOuter[2] = 2.0;												\n"
 		"	}																			\n"
 		"																				\n"
 		"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;	\n"
@@ -67,6 +68,21 @@ void main_app::compile_shaders()
 		"	gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position +						\n"
 		"					gl_TessCoord.y * gl_in[1].gl_Position +						\n"
 		"					gl_TessCoord.z * gl_in[2].gl_Position);						\n"
+		"}																				\n"
+	};
+
+	static const GLchar* gs_src[] = {
+		"#version 450 core																\n"
+		"																				\n"
+		"layout (triangles) in;															\n"
+		"layout (points, max_vertices = 3) out;											\n"
+		"																				\n"
+		"void main(void)																\n"
+		"{																				\n"
+		"	for (int i = 0; i < gl_in.length(); ++i) {									\n"
+		"		gl_Position = gl_in[i].gl_Position;										\n"
+		"		EmitVertex();															\n"
+		"	}																			\n"
 		"}																				\n"
 	};
 
@@ -96,6 +112,11 @@ void main_app::compile_shaders()
 	glCompileShader(tes);
 	check_shader_errors(tes, L"Tesselation evaluate shader source error");
 
+	GLuint gs = glCreateShader(GL_GEOMETRY_SHADER);
+	glShaderSource(gs, 1, gs_src, NULL);
+	glCompileShader(gs);
+	check_shader_errors(gs, L"Geometry shader source error");
+
 	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fs, 1, fs_src, NULL);
 	glCompileShader(fs);
@@ -105,12 +126,14 @@ void main_app::compile_shaders()
 	glAttachShader(program_, vs);
 	glAttachShader(program_, tcs);
 	glAttachShader(program_, tes);
+	glAttachShader(program_, gs);
 	glAttachShader(program_, fs);
 	glLinkProgram(program_);
 
 	glDeleteShader(vs);
 	glDeleteShader(tcs);
 	glDeleteShader(tes);
+	glDeleteShader(gs);
 	glDeleteShader(fs);
 }
 
