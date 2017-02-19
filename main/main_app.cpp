@@ -15,7 +15,7 @@ void main_app::render(double currentTime)
 
 	glUseProgram(program_);
 	glPointSize(5.0f);					// point radius
-	glDrawArrays(GL_POINTS, 0, 1);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void main_app::shutdown()
@@ -27,23 +27,27 @@ void main_app::shutdown()
 void main_app::compile_shaders()
 {
 	static const GLchar* vs_src[] = {
-		"#version 450 core																			\n"
-		"																							\n"
-		"void main(void)																			\n"
-		"{																							\n"
-		"	gl_Position = vec4(0.0, 0.0, 0.5, 1.0);													\n"
-		"}																							\n"
+		"#version 450 core																\n"
+		"																				\n"
+		"const vec4 vertices[3] = vec4[](vec4(-0.25, -0.25, 0.5, 1.0),					\n"
+		"								vec4(0.25, 0.25, 0.5, 1.0),						\n"
+		"								vec4(0.25, -0.25, 0.5, 1.0));					\n"
+		"																				\n"
+		"void main(void)																\n"
+		"{																				\n"
+		"	gl_Position = vertices[gl_VertexID];										\n"
+		"}																				\n"
 	};
 
 	static const GLchar* fs_src[] = {
-		"#version 450 core																			\n"
-		"																							\n"
-		"out vec4 color;																			\n"
-		"																							\n"
-		"void main(void)																			\n"
-		"{																							\n"
-		"	color = vec4(0.0, 0.0, 0.5, 1.0);														\n"
-		"}																							\n"
+		"#version 450 core																\n"
+		"																				\n"
+		"out vec4 color;																\n"
+		"																				\n"
+		"void main(void)																\n"
+		"{																				\n"
+		"	color = vec4(0.0, 0.0, 0.5, 1.0);											\n"
+		"}																				\n"
 	};
 
 	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
