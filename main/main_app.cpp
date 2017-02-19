@@ -6,16 +6,16 @@ void main_app::startup()
 
 	glCreateVertexArrays(1, &vao_);
 	glBindVertexArray(vao_);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void main_app::render(double currentTime)
 {
-	static const GLfloat back_color[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	static const GLfloat back_color[] = { 0.9f, 0.9f, 0.9f, 1.0f };
 	glClearBufferfv(GL_COLOR, NULL, back_color);
 
 	glUseProgram(program_);
-	glPointSize(5.0f);					// point radius
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_PATCHES, 0, 3);
 }
 
 void main_app::shutdown()
@@ -39,6 +39,37 @@ void main_app::compile_shaders()
 		"}																				\n"
 	};
 
+	static const GLchar* tcs_src[] = {
+		"#version 450 core																\n"
+		"																				\n"
+		"layout (vertices = 3) out;														\n"
+		"																				\n"
+		"void main(void)																\n"
+		"{																				\n"
+		"	if (gl_InvocationID == 0) {													\n"
+		"		gl_TessLevelInner[0] = 3.0;												\n"
+		"		gl_TessLevelOuter[0] = 3.0;												\n"
+		"		gl_TessLevelOuter[1] = 3.0;												\n"
+		"		gl_TessLevelOuter[2] = 3.0;												\n"
+		"	}																			\n"
+		"																				\n"
+		"	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;	\n"
+		"}																				\n"
+	};
+	
+	static const GLchar* tes_src[] = {
+		"#version 450 core																\n"
+		"																				\n"
+		"layout (triangles, equal_spacing, cw) in;										\n"
+		"																				\n"
+		"void main(void)																\n"
+		"{																				\n"
+		"	gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position +						\n"
+		"					gl_TessCoord.y * gl_in[1].gl_Position +						\n"
+		"					gl_TessCoord.z * gl_in[2].gl_Position);						\n"
+		"}																				\n"
+	};
+
 	static const GLchar* fs_src[] = {
 		"#version 450 core																\n"
 		"																				\n"
@@ -55,6 +86,16 @@ void main_app::compile_shaders()
 	glCompileShader(vs);
 	check_shader_errors(vs, L"Vertex shader source error");
 
+	GLuint tcs = glCreateShader(GL_TESS_CONTROL_SHADER);
+	glShaderSource(tcs, 1, tcs_src, NULL);
+	glCompileShader(tcs);
+	check_shader_errors(tcs, L"Tesselation control shader source error");
+
+	GLuint tes = glCreateShader(GL_TESS_EVALUATION_SHADER);
+	glShaderSource(tes, 1, tes_src, NULL);
+	glCompileShader(tes);
+	check_shader_errors(tes, L"Tesselation evaluate shader source error");
+
 	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fs, 1, fs_src, NULL);
 	glCompileShader(fs);
@@ -62,10 +103,14 @@ void main_app::compile_shaders()
 
 	program_ = glCreateProgram();
 	glAttachShader(program_, vs);
+	glAttachShader(program_, tcs);
+	glAttachShader(program_, tes);
 	glAttachShader(program_, fs);
 	glLinkProgram(program_);
 
 	glDeleteShader(vs);
+	glDeleteShader(tcs);
+	glDeleteShader(tes);
 	glDeleteShader(fs);
 }
 
