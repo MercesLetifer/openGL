@@ -1,4 +1,5 @@
 #include "main_app.h"
+#include <vmath.h>
 
 void main_app::startup()
 {
@@ -6,7 +7,36 @@ void main_app::startup()
 
 	glCreateVertexArrays(1, &vao_);
 	glBindVertexArray(vao_);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	
+	GLuint vertex_buffer, color_buffer;
+	glCreateBuffers(1, &vertex_buffer);
+	glCreateBuffers(1, &color_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
+	
+	static const GLfloat vertices[] = {
+		-0.25f, -0.25f, 0.5f, 1.0f,
+		0.25f, 0.25f, 0.5f, 1.0f,
+		0.25f, -0.25f, 0.5f, 1.0f
+	};
+
+	static const GLfloat colors[] = {
+		0.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 1.0f, 1.0f, 1.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	};
+
+	glNamedBufferStorage(vertex_buffer, sizeof(vertices), vertices, GL_MAP_WRITE_BIT);
+	glNamedBufferStorage(color_buffer, sizeof(colors), colors, GL_MAP_WRITE_BIT);
+
+	glVertexArrayVertexBuffer(vao_, 0, vertex_buffer, 0, sizeof(vmath::vec4));
+	glVertexArrayVertexBuffer(vao_, 1, color_buffer, 0, sizeof(vmath::vec4));
+
+	glVertexArrayAttribFormat(vao_, 0, 4, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribFormat(vao_, 0, 4, GL_FLOAT, GL_FALSE, 0);
+
+	glEnableVertexArrayAttrib(vao_, 0);
+	glEnableVertexArrayAttrib(vao_, 1);
 }
 
 void main_app::render(double currentTime)
@@ -15,8 +45,7 @@ void main_app::render(double currentTime)
 	glClearBufferfv(GL_COLOR, NULL, back_color);
 
 	glUseProgram(program_);
-	glPointSize(5.0f);
-	glDrawArrays(GL_PATCHES, 0, 3);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void main_app::shutdown()
@@ -30,13 +59,15 @@ void main_app::compile_shaders()
 	static const GLchar* vs_src[] = {
 		"#version 450 core																\n"
 		"																				\n"
-		"const vec4 vertices[3] = vec4[](vec4(-0.25, -0.25, 0.5, 1.0),					\n"
-		"								vec4(0.25, 0.25, 0.5, 1.0),						\n"
-		"								vec4(0.25, -0.25, 0.5, 1.0));					\n"
+		"layout (location = 0) in vec4 vertex;											\n"
+		"layout (location = 1) in vec4 color;											\n"
+		"																				\n"
+		"out vec4 vs_color;																\n"
 		"																				\n"
 		"void main(void)																\n"
 		"{																				\n"
-		"	gl_Position = vertices[gl_VertexID];										\n"
+		"	gl_Position = vertex;														\n"
+		"	vs_color = color;															\n"
 		"}																				\n"
 	};
 
@@ -89,11 +120,12 @@ void main_app::compile_shaders()
 	static const GLchar* fs_src[] = {
 		"#version 450 core																\n"
 		"																				\n"
+		"in vec4 vs_color;																\n"
 		"out vec4 color;																\n"
 		"																				\n"
 		"void main(void)																\n"
 		"{																				\n"
-		"	color = vec4(0.0, 0.0, 0.5, 1.0);											\n"
+		"	color = vs_color;															\n"
 		"}																				\n"
 	};
 
@@ -102,20 +134,20 @@ void main_app::compile_shaders()
 	glCompileShader(vs);
 	check_shader_errors(vs, L"Vertex shader source error");
 
-	GLuint tcs = glCreateShader(GL_TESS_CONTROL_SHADER);
-	glShaderSource(tcs, 1, tcs_src, NULL);
-	glCompileShader(tcs);
-	check_shader_errors(tcs, L"Tesselation control shader source error");
+//	GLuint tcs = glCreateShader(GL_TESS_CONTROL_SHADER);
+//	glShaderSource(tcs, 1, tcs_src, NULL);
+//	glCompileShader(tcs);
+//	check_shader_errors(tcs, L"Tesselation control shader source error");
 
-	GLuint tes = glCreateShader(GL_TESS_EVALUATION_SHADER);
-	glShaderSource(tes, 1, tes_src, NULL);
-	glCompileShader(tes);
-	check_shader_errors(tes, L"Tesselation evaluate shader source error");
+//	GLuint tes = glCreateShader(GL_TESS_EVALUATION_SHADER);
+//	glShaderSource(tes, 1, tes_src, NULL);
+//	glCompileShader(tes);
+//	check_shader_errors(tes, L"Tesselation evaluate shader source error");
 
-	GLuint gs = glCreateShader(GL_GEOMETRY_SHADER);
-	glShaderSource(gs, 1, gs_src, NULL);
-	glCompileShader(gs);
-	check_shader_errors(gs, L"Geometry shader source error");
+//	GLuint gs = glCreateShader(GL_GEOMETRY_SHADER);
+//	glShaderSource(gs, 1, gs_src, NULL);
+//	glCompileShader(gs);
+//	check_shader_errors(gs, L"Geometry shader source error");
 
 	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fs, 1, fs_src, NULL);
@@ -124,16 +156,16 @@ void main_app::compile_shaders()
 
 	program_ = glCreateProgram();
 	glAttachShader(program_, vs);
-	glAttachShader(program_, tcs);
-	glAttachShader(program_, tes);
-	glAttachShader(program_, gs);
+//	glAttachShader(program_, tcs);
+//	glAttachShader(program_, tes);
+//	glAttachShader(program_, gs);
 	glAttachShader(program_, fs);
 	glLinkProgram(program_);
 
 	glDeleteShader(vs);
-	glDeleteShader(tcs);
-	glDeleteShader(tes);
-	glDeleteShader(gs);
+//	glDeleteShader(tcs);
+//	glDeleteShader(tes);
+//	glDeleteShader(gs);
 	glDeleteShader(fs);
 }
 

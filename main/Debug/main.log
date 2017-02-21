@@ -1,3 +1,4 @@
 ﻿  main_app.cpp
+d:\opengl\sb7code-master\include\vmath.h(1022): warning C4244: инициализация: преобразование "double" в "float", возможна потеря данных
   main.vcxproj -> D:\OpenGL\projects\main\openGL\Debug\main.exe
   main.vcxproj -> D:\OpenGL\projects\main\openGL\Debug\main.pdb (Full PDB)
