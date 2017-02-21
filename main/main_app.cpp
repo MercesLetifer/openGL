@@ -7,36 +7,36 @@ void main_app::startup()
 
 	glCreateVertexArrays(1, &vao_);
 	glBindVertexArray(vao_);
-	
-	GLuint vertex_buffer, color_buffer;
-	glCreateBuffers(1, &vertex_buffer);
-	glCreateBuffers(1, &color_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
-	
-	static const GLfloat vertices[] = {
-		-0.25f, -0.25f, 0.5f, 1.0f,
-		0.25f, 0.25f, 0.5f, 1.0f,
-		0.25f, -0.25f, 0.5f, 1.0f
+
+	struct vertex {
+		float x;
+		float y;
+		float z;
+		float w;
+
+		float r;
+		float g;
+		float b;
+		float a;
 	};
 
-	static const GLfloat colors[] = {
-		0.0f, 0.0f, 1.0f, 1.0f,
-		0.0f, 1.0f, 1.0f, 1.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	};
+	static const vertex vertices[] = { vertex{-0.25f, -0.25f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f},
+										vertex{0.25f, 0.25f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},
+										vertex{0.25f, -0.25f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f} };
 
-	glNamedBufferStorage(vertex_buffer, sizeof(vertices), vertices, GL_MAP_WRITE_BIT);
-	glNamedBufferStorage(color_buffer, sizeof(colors), colors, GL_MAP_WRITE_BIT);
-
-	glVertexArrayVertexBuffer(vao_, 0, vertex_buffer, 0, sizeof(vmath::vec4));
-	glVertexArrayVertexBuffer(vao_, 1, color_buffer, 0, sizeof(vmath::vec4));
-
-	glVertexArrayAttribFormat(vao_, 0, 4, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribFormat(vao_, 0, 4, GL_FLOAT, GL_FALSE, 0);
-
+	GLuint buffer;
+	glCreateBuffers(1, &buffer);
+	glNamedBufferStorage(buffer, sizeof(vertices), vertices, 0);
+	
+	glVertexArrayAttribBinding(vao_, 0, 0);
+	glVertexArrayAttribFormat(vao_, 0, 4, GL_FLOAT, GL_FALSE, offsetof(vertex, x));
 	glEnableVertexArrayAttrib(vao_, 0);
+
+	glVertexArrayAttribBinding(vao_, 1, 0);
+	glVertexArrayAttribFormat(vao_, 1, 4, GL_FLOAT, GL_FALSE, offsetof(vertex, r));
 	glEnableVertexArrayAttrib(vao_, 1);
+	
+	glVertexArrayVertexBuffer(vao_, 0, buffer, 0, sizeof(vertex));
 }
 
 void main_app::render(double currentTime)
